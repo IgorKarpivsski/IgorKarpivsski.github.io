@@ -5,11 +5,11 @@
 <title>ריאל נגד ברסה · קרב מתנות</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@700;800;900&family=Orbitron:wght@900&display=swap">
 <style>
-  /* קרב מתנות ריאל מדריד נגד ברצלונה. גודל מקור 1080×560. מקבל את המתנות מ-TikStudio שפתוח במחשב.
+  /* קרב מתנות ריאל מדריד נגד ברצלונה. גודל מקור 1080×600. מקבל את המתנות מ-TikStudio שפתוח במחשב.
      פרמטרים: ?end=22:00 (סיום הקרב) · ?real=Ice Cream Cone&barca=Rose (מתנות הקבוצות) · ?reset=1 (איפוס) · ?bg=1 (רקע) · ?demo=1 */
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; font-family: Rubik, 'Segoe UI', Arial, sans-serif; color: #fff; }
-  .wrap { position: absolute; top: 0; left: 0; width: 1080px; height: 560px; transform-origin: top left; direction: ltr; overflow: hidden; }
+  .wrap { position: absolute; top: 0; left: 0; width: 1080px; height: 600px; transform-origin: top left; direction: ltr; overflow: hidden; }
   .rtl { direction: rtl; }
   .stroke { -webkit-text-stroke: 7px #000; paint-order: stroke fill; }
   .num { font-family: Orbitron, monospace; font-variant-numeric: tabular-nums; }
@@ -48,17 +48,26 @@
   .pct.r { left: 26px; color: #1b2a6b; text-shadow: 0 0 10px #fff; } .pct.b { right: 26px; color: #fff; text-shadow: 0 0 10px #000; }
 
   /* הוראות */
-  .how { position: absolute; left: 30px; right: 30px; top: 330px; display: flex; justify-content: space-between; gap: 16px; }
-  .rule { flex: 1; display: flex; align-items: center; gap: 14px; padding: 12px 18px; border-radius: 22px; background: rgba(0,0,0,.6); border: 3px solid; font-size: 30px; font-weight: 900; }
-  .rule.real { border-color: #d4af37; } .rule.barca { border-color: #a50044; flex-direction: row-reverse; text-align: left; }
-  .rule .gi { flex: none; width: 70px; height: 70px; display: grid; place-items: center; font-size: 54px; }
-  .rule .gi img { width: 100%; height: 100%; object-fit: contain; }
-  .rule small { display: block; font-size: 22px; font-weight: 800; opacity: .85; }
-  .join { position: absolute; left: 0; right: 0; top: 432px; text-align: center; font-size: 27px; font-weight: 900; }
+  .how { position: absolute; left: 24px; right: 24px; top: 322px; display: flex; justify-content: space-between; gap: 14px; }
+  .side { flex: 1; padding: 6px 10px 8px; border-radius: 22px; background: rgba(0,0,0,.62); border: 3px solid; }
+  .side.real { border-color: #d4af37; } .side.barca { border-color: #a50044; }
+  .side h3 { text-align: center; font-size: 24px; font-weight: 900; margin-bottom: 4px; }
+  .side.real h3 { color: #fff; } .side.barca h3 { color: #ffd3e4; }
+  .gifts { display: flex; justify-content: space-between; gap: 6px; }
+  .gt { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; border-radius: 14px; background: rgba(255,255,255,.07); }
+  .gt .im { width: 66px; height: 66px; display: grid; place-items: center; font-size: 48px; }
+  .gt .im img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0,0,0,.5)); }
+  .gt.big .im img { animation: wob 2.4s ease-in-out infinite; }
+  .gt .gn { font-size: 18px; font-weight: 800; white-space: nowrap; }
+  .gt .gc { font-family: Orbitron, monospace; font-size: 17px; font-weight: 900; color: #febe10; }
+  .gt.hit { animation: hit .6s cubic-bezier(.2, 1.8, .4, 1); box-shadow: 0 0 0 3px #febe10, 0 0 20px #febe10; }
+  @keyframes wob { 50% { transform: rotate(-8deg) scale(1.08); } }
+  @keyframes hit { 40% { transform: scale(1.1); } }
+  .join { position: absolute; left: 0; right: 0; top: 506px; text-align: center; font-size: 26px; font-weight: 900; }
   .join b { color: #febe10; }
 
   /* תורמים מובילים */
-  .tops { position: absolute; left: 30px; right: 30px; top: 482px; display: flex; justify-content: space-between; }
+  .tops { position: absolute; left: 30px; right: 30px; top: 546px; display: flex; justify-content: space-between; }
   .tp { display: flex; align-items: center; gap: 10px; padding: 6px 16px 6px 6px; border-radius: 99px; background: rgba(0,0,0,.55); font-size: 22px; font-weight: 800; max-width: 46%; }
   .tp.barca { flex-direction: row-reverse; padding: 6px 6px 6px 16px; }
   .tp .av { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; flex: none; display: grid; place-items: center; background: #febe10; color: #000; font-weight: 900; font-size: 22px; }
@@ -108,8 +117,8 @@
   <div class="bar"><div class="bstripes"></div><div class="rm" id="rm"></div><div class="pct r num" id="pR">50%</div><div class="pct b num" id="pB">50%</div><div class="ball" id="ball"><span>⚽</span></div></div>
 
   <div class="how">
-    <div class="rule real rtl"><div class="gi" id="giReal">🍦</div><div><span id="gnReal">גלידה</span> = ריאל<small>כל מתנה כזו = גול לריאל</small></div></div>
-    <div class="rule barca rtl"><div class="gi" id="giBarca">🌹</div><div><span id="gnBarca">ורד</span> = ברסה<small>כל מתנה כזו = גול לברסה</small></div></div>
+    <div class="side real rtl"><h3>🤍 מתנות לריאל</h3><div class="gifts" id="gReal"></div></div>
+    <div class="side barca rtl"><h3>💙❤️ מתנות לברסה</h3><div class="gifts" id="gBarca"></div></div>
   </div>
   <div class="join rtl stroke">כתבו בצ'אט <b>ריאל</b> או <b>ברסה</b> וכל המתנות שלכם יספרו לקבוצה שלכם!</div>
   <div class="tops">
@@ -120,23 +129,58 @@
   <div class="banner rtl" id="banner"></div>
   <div class="win rtl"><img id="winImg" alt=""><h1 id="winT"></h1><p id="winP"></p></div>
   <div class="conn rtl">⚠️ אין חיבור. פתח את דף הממסר ב-TikStudio</div>
-  <canvas id="fx" width="1080" height="560"></canvas>
+  <canvas id="fx" width="1080" height="600"></canvas>
 </div>
 <script>
 (() => {
   const Q = new URLSearchParams(location.search);
   const $ = (id) => document.getElementById(id);
   if (Q.get('bg') === '1') document.body.classList.add('bg');
-  const fit = () => { const k = Math.min(innerWidth / 1080, innerHeight / 560) || 1; const w = $('wrap'); w.style.transform = `scale(${k})`; w.style.left = ((innerWidth - 1080 * k) / 2) + 'px'; };
+  const fit = () => { const k = Math.min(innerWidth / 1080, innerHeight / 600) || 1; const w = $('wrap'); w.style.transform = `scale(${k})`; w.style.left = ((innerWidth - 1080 * k) / 2) + 'px'; };
   addEventListener('resize', fit); fit();
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const fmt = (n) => Math.round(n).toLocaleString('he-IL');
 
   // ===== הגדרות =====
-  const HE = { 'rose': 'ורד', 'ice cream cone': 'גלידה', 'tiktok': 'טיקטוק', 'finger heart': 'לב באצבעות', 'heart me': 'לב', 'gg': 'GG', 'doughnut': 'סופגנייה', 'perfume': 'בושם' };
-  const EMO = { 'rose': '🌹', 'ice cream cone': '🍦', 'tiktok': '🎵', 'finger heart': '🫰', 'heart me': '💗', 'gg': '🎮', 'doughnut': '🍩', 'perfume': '🧴' };
-  const GIFT = { real: (Q.get('real') || 'Ice Cream Cone').toLowerCase(), barca: (Q.get('barca') || 'Rose').toLowerCase() };
-  for (const t of ['real', 'barca']) { const k = GIFT[t]; const T = t === 'real' ? 'Real' : 'Barca'; $('gi' + T).textContent = EMO[k] || '🎁'; $('gn' + T).textContent = HE[k] || Q.get(t) || k; }
+  // מתנות לכל קבוצה (1 / 100 / 500 / 1000 מטבעות). התמונה: מקטלוג TikTok, ואחרי שהמתנה מגיעה בלייב — התמונה הרשמית שלה
+  const CDN = 'https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/';
+  const BEET = (n) => `https://beetgames.com/images/gifts/${n.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')}.webp`;
+  const TEAM_GIFTS = {
+    real: [
+      { name: 'Ice Cream Cone', he: 'גלידה', coins: 1, emo: '🍦', img: '' },
+      { name: 'Hand Hearts', he: 'ידיים לב', coins: 100, emo: '🫶', img: CDN + '6cd022271dc4669d182cad856384870f~tplv-obj.png' },
+      { name: 'Money Gun', he: 'אקדח כסף', coins: 500, emo: '💸', img: '' },
+      { name: 'Galaxy', he: 'גלקסיה', coins: 1000, emo: '🌌', img: '' },
+    ],
+    barca: [
+      { name: 'Rose', he: 'ורד', coins: 1, emo: '🌹', img: CDN + 'eba3a9bb85c33e017f3648eaf88d7189~tplv-obj.png' },
+      { name: 'Paper Crane', he: 'עגורן נייר', coins: 99, emo: '🕊️', img: CDN + '0f158a08f7886189cdabf496e8a07c21~tplv-obj.png' },
+      { name: 'Coral', he: 'אלמוג', coins: 499, emo: '🪸', img: CDN + 'd4faa402c32bf4f92bee654b2663d9f1~tplv-obj.png' },
+      { name: 'Train', he: 'רכבת', coins: 899, emo: '🚂', img: '' },
+    ],
+  };
+  // אפשר להחליף בכתובת: ?real=Ice Cream Cone,Hand Hearts,...&barca=Rose,...
+  for (const t of ['real', 'barca']) if (Q.get(t)) TEAM_GIFTS[t] = Q.get(t).split(',').map((n) => ({ name: n.trim(), he: n.trim(), coins: 0, emo: '🎁', img: '' }));
+  const GIFT_TEAM = {};
+  for (const t of ['real', 'barca']) for (const g of TEAM_GIFTS[t]) GIFT_TEAM[g.name.toLowerCase()] = t;
+  let learned = {};
+  try { learned = JSON.parse(localStorage.getItem('clasico-gift-img') || '{}'); } catch { /* */ }
+  function giftImg(g) {
+    const list = [learned[g.name.toLowerCase()], g.img, BEET(g.name)].filter(Boolean);
+    return `<img src="${list[0]}" data-alt="${list.slice(1).join('|')}" referrerpolicy="no-referrer" alt="" onerror="const a=(this.dataset.alt||'').split('|').filter(Boolean);if(a.length){this.dataset.alt=a.slice(1).join('|');this.src=a[0]}else{this.replaceWith(document.createTextNode('${g.emo}'))}">`;
+  }
+  function drawGifts() {
+    for (const t of ['real', 'barca']) {
+      $(t === 'real' ? 'gReal' : 'gBarca').innerHTML = TEAM_GIFTS[t].map((g) => `<div class="gt ${g.coins >= 100 ? 'big' : ''}" data-g="${g.name.toLowerCase()}"><div class="im">${giftImg(g)}</div><div class="gn">${g.he}</div><div class="gc">${g.coins ? g.coins.toLocaleString('he-IL') + ' 🪙' : ''}</div></div>`).join('');
+    }
+  }
+  drawGifts();
+  function learnImg(gift) {
+    const k = String(gift.name || '').toLowerCase();
+    if (!GIFT_TEAM[k] || !gift.image || learned[k] === gift.image) return;
+    learned[k] = gift.image; try { localStorage.setItem('clasico-gift-img', JSON.stringify(learned)); } catch { /* */ }
+    drawGifts();
+  }
   const WORDS = {
     real: ['ריאל', 'מדריד', 'real', 'rm', 'rma', 'madrid', 'halamadrid', 'הלהמדריד', 'הלה', '🤍', '⚪'],
     barca: ['ברסה', 'ברצלונה', 'בארסה', 'barca', 'barça', 'fcb', 'barcelona', 'visca', 'ויסקה', '🔵🔴', '💙❤️', '❤️💙'],
@@ -220,10 +264,12 @@
     }
     if (ev.type !== 'gift' || ev.streaking) return;
     const name = String(ev.gift?.name || '').toLowerCase();
-    let team = name === GIFT.real ? 'real' : name === GIFT.barca ? 'barca' : S.members[key];
+    let team = GIFT_TEAM[name] || S.members[key];
     if (!team) return;
-    if (name === GIFT.real || name === GIFT.barca) { S.members[key] = team; }
+    if (GIFT_TEAM[name]) { S.members[key] = team; learnImg(ev.gift || {}); const tile = document.querySelector(`.gt[data-g="${CSS.escape(name)}"]`); if (tile) { tile.classList.remove('hit'); void tile.offsetWidth; tile.classList.add('hit'); } }
     addPoints(team, ev.user, ev.gift || {});
+    const pts = Number(ev.gift?.total) || 0;
+    if (pts >= 100) showBanner(team, `💥 ${ev.user.nick || ''} שלח ${pts.toLocaleString('he-IL')} 🪙 ל${team === 'real' ? 'ריאל' : 'ברסה'}!`);
   }
 
   function tickTimer() {
@@ -252,8 +298,8 @@
   let last = performance.now();
   (function loop(now) {
     const dt = Math.min(.05, (now - last) / 1000); last = now;
-    cx.clearRect(0, 0, 1080, 560);
-    ps = ps.filter((p) => p.life > 0 && p.y < 600);
+    cx.clearRect(0, 0, 1080, 600);
+    ps = ps.filter((p) => p.life > 0 && p.y < 640);
     for (const p of ps) { p.vy += 600 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.a += p.va * dt; p.life -= dt * .7; cx.save(); cx.globalAlpha = Math.min(1, p.life); cx.translate(p.x, p.y); cx.rotate(p.a); cx.fillStyle = p.c; cx.fillRect(-p.r, -p.r / 3, p.r * 2, p.r / 1.5); cx.restore(); }
     requestAnimationFrame(loop);
   })(last);
@@ -264,7 +310,7 @@
   if (Q.get('demo')) {
     const ppl = [['דנה', 'real'], ['יוסי', 'barca'], ['נועה', 'real'], ['אבי', 'barca'], ['שירה', 'barca']];
     let i = 0;
-    setInterval(() => { const [n, t] = ppl[i++ % ppl.length]; onEvent({ type: 'gift', user: { id: n, nick: n }, gift: { name: t === 'real' ? GIFT.real : GIFT.barca, coins: 1, count: 1 + Math.floor(Math.random() * 30), total: 0 } }); }, 1300);
+    setInterval(() => { const [n, t] = ppl[i++ % ppl.length]; const g = TEAM_GIFTS[t][i % 7 === 0 ? 2 : i % 3 === 0 ? 1 : 0]; onEvent({ type: 'gift', user: { id: n, nick: n }, gift: { name: g.name, coins: g.coins, count: 1, total: g.coins } }); }, 1300);
     return;
   }
   let wsOk = false, cloudOk = false, offT = null;
