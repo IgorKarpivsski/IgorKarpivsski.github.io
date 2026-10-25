@@ -119,7 +119,7 @@
 
   <div class="banner rtl" id="banner"></div>
   <div class="win rtl"><img id="winImg" alt=""><h1 id="winT"></h1><p id="winP"></p></div>
-  <div class="conn rtl">⚠️ לא מחובר ל-TikStudio. ודא שהוא פתוח ומחובר ללייב</div>
+  <div class="conn rtl">⚠️ אין חיבור. פתח את דף הממסר ב-TikStudio</div>
   <canvas id="fx" width="1080" height="560"></canvas>
 </div>
 <script>
@@ -208,8 +208,10 @@
     pop(team, user, gift, pts); render(); save();
   }
 
+  const seen = new Set();
   function onEvent(ev) {
     if (!ev || !ev.user) return;
+    if (ev.id) { if (seen.has(ev.id)) return; seen.add(ev.id); if (seen.size > 5000) seen.clear(); }
     const key = ev.user.id || ev.user.name || ev.user.nick;
     if (ev.type === 'chat') {
       const t = teamOfText(ev.comment);
@@ -265,16 +267,39 @@
     setInterval(() => { const [n, t] = ppl[i++ % ppl.length]; onEvent({ type: 'gift', user: { id: n, nick: n }, gift: { name: t === 'real' ? GIFT.real : GIFT.barca, coins: 1, count: 1 + Math.floor(Math.random() * 30), total: 0 } }); }, 1300);
     return;
   }
+  let wsOk = false, cloudOk = false, offT = null;
+  const status = () => { clearTimeout(offT); if (wsOk || cloudOk) document.body.classList.remove('offline'); else offT = setTimeout(() => { if (!wsOk && !cloudOk) document.body.classList.add('offline'); }, 8000); };
+
+  // 1) ענן: המתנות מגיעות דרך דף הממסר שפתוח במחשב (עובד גם מאתר ציבורי וגם בתוך LIVE Studio)
+  const TOPIC = Q.get('relay') || 'ts-clasico-fbe642fc1dc9';
+  function cloud() {
+    const es = new EventSource(`${Q.get('ntfy') || 'https://ntfy.sh'}/${encodeURIComponent(TOPIC)}/sse`);
+    es.onopen = () => { cloudOk = true; status(); };
+    es.onmessage = (e) => {
+      let m; try { m = JSON.parse(e.data); } catch { return; }
+      if (m.event !== 'message' || !m.message) return;
+      let batch; try { batch = JSON.parse(m.message); } catch { return; }
+      for (const it of Array.isArray(batch) ? batch : []) {
+        if (it.t === 'g') onEvent({ id: it.i, type: 'gift', user: it.u || {}, gift: it.g || {} });
+        else if (it.t === 'c') onEvent({ id: it.i, type: 'chat', user: it.u || {}, comment: it.c });
+      }
+    };
+    es.onerror = () => { cloudOk = false; status(); };
+  }
+  if (Q.get('relay') !== '0') cloud();
+
+  // 2) ישיר: אם הדף פתוח מתוך TikStudio עצמו (localhost) — מקבל את האירועים ישירות
   const local = /^(localhost|127\.0\.0\.1|localtest\.me)$/.test(location.hostname);
   const port = Q.get('port') || (local ? location.port : '8787') || '8787';
   const hosts = local ? [location.hostname] : ['127.0.0.1', 'localhost'];
-  let hi = 0, offT = null;
+  let hi = 0;
   function open() {
-    const ws = new WebSocket(`ws://${hosts[hi % hosts.length]}:${port}/ws?page=clasico-vs`);
+    let ws;
+    try { ws = new WebSocket(`ws://${hosts[hi % hosts.length]}:${port}/ws?page=clasico-vs`); } catch { return; }
     let ok = false;
-    ws.onopen = () => { ok = true; clearTimeout(offT); document.body.classList.remove('offline'); };
+    ws.onopen = () => { ok = true; wsOk = true; status(); };
     ws.onmessage = (e) => { let m; try { m = JSON.parse(e.data); } catch { return; } if (m.type === 'event') onEvent(m.event); };
-    ws.onclose = () => { if (!ok) hi++; clearTimeout(offT); offT = setTimeout(() => document.body.classList.add('offline'), 6000); setTimeout(open, 2500); };
+    ws.onclose = () => { if (!ok) hi++; wsOk = false; status(); setTimeout(open, ok ? 2500 : 8000); };
     ws.onerror = () => {};
   }
   open();
