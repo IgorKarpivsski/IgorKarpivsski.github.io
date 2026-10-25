@@ -78,6 +78,20 @@
   }
   open();
 
+  // תמונות המתנות מהקטלוג של TikStudio (עובד כשהדף פתוח מתוך TikStudio: localhost:8787)
+  const WANT = ['ice cream cone', 'rose', 'hat and mustache', 'cap', "lion's mane", 'gem gun', 'galaxy', 'shiny air balloon'];
+  const gk = (n) => String(n || '').toLowerCase().replace(/[’‘`´]/g, "'").replace(/\s+/g, ' ').trim();
+  async function sendCatalog() {
+    try {
+      const base = /^(localhost|127\.0\.0\.1|localtest\.me)$/.test(location.hostname) ? '' : 'http://127.0.0.1:8787';
+      const j = await (await fetch(base + '/api/gifts')).json();
+      const out = {};
+      for (const g of j.gifts || []) { const k = gk(g.name); if (WANT.includes(k)) { const img = /^https?:/.test(g.image || '') ? g.image : /^https?:/.test(g.alt || '') ? g.alt : ''; if (img) out[g.name] = img; } }
+      if (Object.keys(out).length) { push({ i: 'cat-' + Date.now(), t: 'cat', g: out }); log('🖼️ נשלחו תמונות מתנות: ' + Object.keys(out).length); }
+    } catch { /* לא זמין מכאן */ }
+  }
+  setTimeout(sendCatalog, 3000); setInterval(sendCatalog, 120000);
+
   $('test').onclick = () => {
     const now = Date.now();
     push({ i: 'test-r-' + now, t: 'g', u: { id: 'test1', nick: 'בדיקה ריאל', avatar: '' }, g: { name: 'Ice Cream Cone', total: 5, coins: 1, count: 5, image: '' } });

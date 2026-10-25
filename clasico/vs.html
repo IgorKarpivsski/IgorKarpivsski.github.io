@@ -148,35 +148,36 @@
   const TEAM_GIFTS = {
     real: [
       { name: 'Ice Cream Cone', he: 'גלידה', coins: 1, emo: '🍦', img: '' },
-      { name: 'Hand Hearts', he: 'ידיים לב', coins: 100, emo: '🫶', img: CDN + '6cd022271dc4669d182cad856384870f~tplv-obj.png' },
-      { name: 'Money Gun', he: 'אקדח כסף', coins: 500, emo: '💸', img: '' },
+      { name: 'Hat and Mustache', he: 'כובע ושפם', coins: 99, emo: '🎩', img: '' },
+      { name: "Lion's Mane", he: 'רעמת אריה', coins: 500, emo: '🦁', img: '' },
       { name: 'Galaxy', he: 'גלקסיה', coins: 1000, emo: '🌌', img: '' },
     ],
     barca: [
       { name: 'Rose', he: 'ורד', coins: 1, emo: '🌹', img: CDN + 'eba3a9bb85c33e017f3648eaf88d7189~tplv-obj.png' },
-      { name: 'Paper Crane', he: 'עגורן נייר', coins: 99, emo: '🕊️', img: CDN + '0f158a08f7886189cdabf496e8a07c21~tplv-obj.png' },
-      { name: 'Coral', he: 'אלמוג', coins: 499, emo: '🪸', img: CDN + 'd4faa402c32bf4f92bee654b2663d9f1~tplv-obj.png' },
-      { name: 'Train', he: 'רכבת', coins: 899, emo: '🚂', img: '' },
+      { name: 'Cap', he: 'כובע מצחייה', coins: 99, emo: '🧢', img: '' },
+      { name: 'Gem Gun', he: 'אקדח יהלומים', coins: 500, emo: '💎', img: '' },
+      { name: 'Shiny Air Balloon', he: 'כדור פורח נוצץ', coins: 1000, emo: '🎈', img: '' },
     ],
   };
   // אפשר להחליף בכתובת: ?real=Ice Cream Cone,Hand Hearts,...&barca=Rose,...
   for (const t of ['real', 'barca']) if (Q.get(t)) TEAM_GIFTS[t] = Q.get(t).split(',').map((n) => ({ name: n.trim(), he: n.trim(), coins: 0, emo: '🎁', img: '' }));
+  const gkey = (n) => String(n || '').toLowerCase().replace(/[’‘`´]/g, "'").replace(/\s+/g, ' ').trim();
   const GIFT_TEAM = {};
-  for (const t of ['real', 'barca']) for (const g of TEAM_GIFTS[t]) GIFT_TEAM[g.name.toLowerCase()] = t;
+  for (const t of ['real', 'barca']) for (const g of TEAM_GIFTS[t]) GIFT_TEAM[gkey(g.name)] = t;
   let learned = {};
   try { learned = JSON.parse(localStorage.getItem('clasico-gift-img') || '{}'); } catch { /* */ }
   function giftImg(g) {
-    const list = [learned[g.name.toLowerCase()], g.img, BEET(g.name)].filter(Boolean);
+    const list = [learned[gkey(g.name)], g.img, BEET(g.name.replace(/[’']/g, ''))].filter(Boolean);
     return `<img src="${list[0]}" data-alt="${list.slice(1).join('|')}" referrerpolicy="no-referrer" alt="" onerror="const a=(this.dataset.alt||'').split('|').filter(Boolean);if(a.length){this.dataset.alt=a.slice(1).join('|');this.src=a[0]}else{this.replaceWith(document.createTextNode('${g.emo}'))}">`;
   }
   function drawGifts() {
     for (const t of ['real', 'barca']) {
-      $(t === 'real' ? 'gReal' : 'gBarca').innerHTML = TEAM_GIFTS[t].map((g) => `<div class="gt ${g.coins >= 100 ? 'big' : ''}" data-g="${g.name.toLowerCase()}"><div class="im">${giftImg(g)}</div><div class="gn">${g.he}</div><div class="gc">${g.coins ? g.coins.toLocaleString('he-IL') + ' 🪙' : ''}</div></div>`).join('');
+      $(t === 'real' ? 'gReal' : 'gBarca').innerHTML = TEAM_GIFTS[t].map((g) => `<div class="gt ${g.coins >= 100 ? 'big' : ''}" data-g="${gkey(g.name)}"><div class="im">${giftImg(g)}</div><div class="gn">${g.he}</div><div class="gc">${g.coins ? g.coins.toLocaleString('he-IL') + ' 🪙' : ''}</div></div>`).join('');
     }
   }
   drawGifts();
   function learnImg(gift) {
-    const k = String(gift.name || '').toLowerCase();
+    const k = gkey(gift.name);
     if (!GIFT_TEAM[k] || !gift.image || learned[k] === gift.image) return;
     learned[k] = gift.image; try { localStorage.setItem('clasico-gift-img', JSON.stringify(learned)); } catch { /* */ }
     drawGifts();
@@ -263,7 +264,7 @@
       return;
     }
     if (ev.type !== 'gift' || ev.streaking) return;
-    const name = String(ev.gift?.name || '').toLowerCase();
+    const name = gkey(ev.gift?.name);
     let team = GIFT_TEAM[name] || S.members[key];
     if (!team) return;
     if (GIFT_TEAM[name]) { S.members[key] = team; learnImg(ev.gift || {}); const tile = document.querySelector(`.gt[data-g="${CSS.escape(name)}"]`); if (tile) { tile.classList.remove('hit'); void tile.offsetWidth; tile.classList.add('hit'); } }
@@ -328,6 +329,7 @@
       for (const it of Array.isArray(batch) ? batch : []) {
         if (it.t === 'g') onEvent({ id: it.i, type: 'gift', user: it.u || {}, gift: it.g || {} });
         else if (it.t === 'c') onEvent({ id: it.i, type: 'chat', user: it.u || {}, comment: it.c });
+        else if (it.t === 'cat') for (const [n, img] of Object.entries(it.g || {})) learnImg({ name: n, image: img });
       }
     };
     es.onerror = () => { cloudOk = false; status(); };
