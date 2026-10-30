@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>TikStudio · ממסר ללייב</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0e0f13; color: #eef0f5; font-family: 'Segoe UI', Arial, sans-serif; }
+  .card { width: min(560px, 92vw); padding: 26px 28px; border-radius: 18px; background: #1a1d25; border: 1px solid #2b303c; box-shadow: 0 20px 50px rgba(0,0,0,.4); }
+  h1 { margin: 0 0 6px; font-size: 24px; }
+  p { margin: 6px 0; color: #9aa1b2; line-height: 1.5; }
+  .row { display: flex; align-items: center; gap: 10px; margin: 12px 0; font-size: 18px; font-weight: 700; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; background: #f87171; flex: none; }
+  .ok .dot { background: #34d399; box-shadow: 0 0 10px #34d399; }
+  .log { margin-top: 14px; max-height: 220px; overflow: auto; font-size: 14px; background: #111318; border-radius: 10px; padding: 10px; color: #c9cede; }
+  .log div { padding: 3px 0; border-bottom: 1px solid #1f232c; }
+  button { margin-top: 10px; padding: 10px 16px; border-radius: 10px; border: 0; background: #ff2d6f; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+  .warn { color: #fbbf24; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>📡 ממסר ללייב</h1>
+  <p>הדף הזה מעביר את המתנות, הצ'אט והלייקים מ-TikStudio אל הווידג'טים שב-LIVE Studio (קרב ריאל-ברסה, קיר הציורים ועוד). <span class="warn">השאר את הלשונית הזאת פתוחה כל הלייב.</span></p>
+  <div class="row" id="rTs"><span class="dot"></span><span id="tTs">מתחבר ל-TikStudio…</span></div>
+  <div class="row" id="rCloud"><span class="dot"></span><span id="tCloud">ממתין לשליחה ראשונה…</span></div>
+  <button id="test">שלח מתנת בדיקה לשני הצדדים</button>
+  <div class="log" id="log"></div>
+</div>
+<script>
+(() => {
+  const TOPIC = new URLSearchParams(location.search).get('topic') || 'ts-clasico-fbe642fc1dc9';
+  const $ = (id) => document.getElementById(id);
+  const log = (t) => { const d = document.createElement('div'); d.textContent = new Date().toLocaleTimeString('he-IL') + '  ' + t; $('log').prepend(d); while ($('log').children.length > 60) $('log').lastChild.remove(); };
+  const TEAM_WORDS = /(ריאל|מדריד|real|madrid|rma|ברסה|בארסה|ברצלונה|barca|barça|fcb|barcelona|visca|ויסקה|הלה)/i;
+
+  // ===== תור ושליחה לענן (ntfy.sh) — מקבצים כל 2.5 שניות כדי לא לחרוג ממגבלת הקצב =====
+  let queue = [], sending = false, backoff = 0, sent = 0;
+  const likes = new Map(), joined = new Set();
+  function push(item) { queue.push(item); if (queue.length > 400) queue.splice(0, queue.length - 400); }
+  async function flush() {
+    if (likes.size) { for (const [, l] of likes) queue.push({ i: 'l' + Date.now() + Math.random().toString(36).slice(2, 6), t: 'l', u: l.u, n: l.n }); likes.clear(); }
+    if (sending || !queue.length || Date.now() < backoff) return;
+    sending = true;
+    // הודעה אחת עד ~3.5KB
+    const batch = []; let size = 2;
+    while (queue.length) { const s = JSON.stringify(queue[0]); if (size + s.length > 3500 && batch.length) break; batch.push(queue.shift()); size += s.length + 1; }
+    try {
+      const r = await fetch((new URLSearchParams(location.search).get('ntfy') || 'https://ntfy.sh') + '/', { method: 'POST', body: JSON.stringify({ topic: TOPIC, message: JSON.stringify(batch) }) });
+      if (r.status === 429) { queue = batch.concat(queue); backoff = Date.now() + 6000; log('⏳ הענן ביקש להאט, ממתין 6 שניות'); }
+      else if (!r.ok) { queue = batch.concat(queue); backoff = Date.now() + 4000; log('⚠️ שגיאת ענן ' + r.status); setCloud(false, 'שגיאה בשליחה לענן (' + r.status + ')'); }
+      else { sent += batch.length; setCloud(true, `נשלח לקרב ✔ (${sent} אירועים)`); }
+    } catch (e) { queue = batch.concat(queue); backoff = Date.now() + 4000; setCloud(false, 'אין חיבור לאינטרנט / לענן'); }
+    sending = false;
+  }
+  setInterval(flush, 2500);
+  function setCloud(ok, t) { $('rCloud').classList.toggle('ok', ok); $('tCloud').textContent = t; }
+
+  // ===== חיבור ל-TikStudio (אותו מחשב) =====
+  function open() {
+    const local = /^(localhost|127\.0\.0\.1|localtest\.me)$/.test(location.hostname);
+    const host = local ? location.host : '127.0.0.1:' + (new URLSearchParams(location.search).get('port') || '8787');
+    let ws;
+    try { ws = new WebSocket('ws://' + host + '/ws?page=clasico-relay'); } catch (e) { $('tTs').textContent = 'הדפדפן חסם את החיבור ל-TikStudio'; return; }
+    ws.onopen = () => { $('rTs').classList.add('ok'); $('tTs').textContent = 'מחובר ל-TikStudio ✔'; };
+    ws.onclose = () => { $('rTs').classList.remove('ok'); $('tTs').textContent = 'לא מחובר ל-TikStudio. ודא שהוא פתוח (ואם הדפדפן שאל על גישה לרשת המקומית — לחץ "אפשר")'; setTimeout(open, 2500); };
+    ws.onmessage = (e) => {
+      let m; try { m = JSON.parse(e.data); } catch { return; }
+      if (m.type !== 'event' || !m.event) return;
+      const ev = m.event, u = ev.user || {};
+      const user = { id: String(u.id || u.name || ''), nick: u.nick || '', avatar: (u.avatar || '').length < 400 ? u.avatar || '' : '' };
+      if (ev.type === 'gift' && !ev.streaking) {
+        const g = ev.gift || {};
+        push({ i: ev.id, t: 'g', u: user, g: { name: g.name, total: g.total, coins: g.coins, count: g.count, image: (g.image || '').length < 400 ? g.image : '' } });
+        log(`🎁 ${user.nick}: ${g.count || 1}x ${g.name} (${g.total} 🪙)`);
+      } else if (ev.type === 'chat') {
+        push({ i: ev.id, t: 'c', u: user, c: String(ev.comment || '').slice(0, 90) });
+        log(`💬 ${user.nick}: ${ev.comment}`);
+      } else if (ev.type === 'like') {
+        // לייקים מצטברים לכל משתמש ונשלחים פעם בשליחה
+        const k = user.id; const l = likes.get(k) || { u: user, n: 0 }; l.n += Number(ev.likeCount) || 1; likes.set(k, l);
+      } else if (ev.type === 'follow' || ev.type === 'share' || ev.type === 'subscribe') {
+        push({ i: ev.id, t: ev.type === 'follow' ? 'f' : ev.type === 'share' ? 's' : 'f', u: user });
+        log((ev.type === 'share' ? '🔁 ' : '💖 ') + user.nick);
+      } else if (ev.type === 'join' && !joined.has(user.id)) {
+        joined.add(user.id); if (joined.size > 20000) joined.clear();
+        push({ i: ev.id, t: 'j', u: user });
+      }
+    };
+  }
+  open();
+
+  // תמונות המתנות מהקטלוג של TikStudio (עובד כשהדף פתוח מתוך TikStudio: localhost:8787)
+  const WANT = ['ice cream cone', 'rose', 'hat and mustache', 'cap', "lion's mane", 'gem gun', 'galaxy', 'shiny air balloon'];
+  const gk = (n) => String(n || '').toLowerCase().replace(/[’‘`´]/g, "'").replace(/\s+/g, ' ').trim();
+  async function sendCatalog() {
+    try {
+      const base = /^(localhost|127\.0\.0\.1|localtest\.me)$/.test(location.hostname) ? '' : 'http://127.0.0.1:8787';
+      const j = await (await fetch(base + '/api/gifts')).json();
+      const out = {};
+      for (const g of j.gifts || []) { const k = gk(g.name); if (WANT.includes(k)) { const img = /^https?:/.test(g.image || '') ? g.image : /^https?:/.test(g.alt || '') ? g.alt : ''; if (img) out[g.name] = img; } }
+      if (Object.keys(out).length) { push({ i: 'cat-' + Date.now(), t: 'cat', g: out }); log('🖼️ נשלחו תמונות מתנות: ' + Object.keys(out).length); }
+    } catch { /* לא זמין מכאן */ }
+  }
+  setTimeout(sendCatalog, 3000); setInterval(sendCatalog, 120000);
+
+  $('test').onclick = () => {
+    const now = Date.now();
+    push({ i: 'test-r-' + now, t: 'g', u: { id: 'test1', nick: 'בדיקה ריאל', avatar: '' }, g: { name: 'Ice Cream Cone', total: 5, coins: 1, count: 5, image: '' } });
+    push({ i: 'test-b-' + now, t: 'g', u: { id: 'test2', nick: 'בדיקה ברסה', avatar: '' }, g: { name: 'Rose', total: 3, coins: 1, count: 3, image: '' } });
+    log('🧪 נשלחו מתנות בדיקה (+5 לריאל, +3 לברסה)');
+    flush();
+  };
+})();
+</script>
+</body>
+</html>

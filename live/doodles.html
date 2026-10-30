@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>קיר הציורים · לייב</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Gochi+Hand&display=swap">
+<style>
+  /* קיר ציורים: כל צופה פעיל מקבל דמות מצוירת עם תמונת הפרופיל שלו.
+     גודל מקור 1080×1920. פרמטרים: ?bg=0 (שקוף) · ?cols=4 · ?max=20 · ?join=1 (גם מי שרק נכנס) · ?title=טקסט · ?demo=1 · ?reset=1 */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: transparent; }
+  .wrap { position: absolute; top: 0; left: 0; width: 1080px; height: 1920px; transform-origin: top left; direction: ltr; overflow: hidden; }
+  body:not(.clear) .wrap { background: radial-gradient(ellipse at 30% 20%, #fbfbfd, #eceef3 60%, #dfe2ea); }
+  body:not(.clear) .wrap::before { content: ''; position: absolute; inset: 0; opacity: .5; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .55 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  .title { position: absolute; top: 40px; left: 0; right: 0; text-align: center; font-family: 'Amatic SC', 'Gochi Hand', cursive; font-weight: 700; font-size: 110px; color: #2b2b35; direction: rtl; }
+  .title:empty { display: none; }
+  .grid { position: absolute; left: 30px; right: 30px; top: 120px; display: grid; grid-template-columns: repeat(var(--cols, 4), 1fr); row-gap: 6px; }
+  body.has-title .grid { top: 230px; }
+
+  .fig { position: relative; height: 360px; display: flex; flex-direction: column; align-items: center; animation: popin .8s cubic-bezier(.2, 1.6, .4, 1) both; }
+  .fig.out { animation: popout .5s ease-in forwards; }
+  .fig .sv { width: 230px; height: 300px; overflow: visible; transform-origin: 50% 90%; animation: sway var(--sp, 3.2s) ease-in-out infinite; animation-delay: var(--dl, 0s); }
+  .fig svg { width: 100%; height: 100%; overflow: visible; }
+  .fig .ink { fill: none; stroke: #1d1d24; stroke-width: 4.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 400; stroke-dashoffset: 400; animation: draw 1.1s .25s ease-out forwards; }
+  .fig .name { margin-top: -18px; max-width: 260px; font-family: 'Gochi Hand', 'Amatic SC', cursive; font-size: 34px; line-height: 1.1; color: #22222b; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; direction: auto; unicode-bidi: plaintext; }
+  .fig.jump .sv { animation: jump .7s cubic-bezier(.2, 1.4, .4, 1); }
+  .fig.vip .name { color: #b8860b; text-shadow: 0 0 8px rgba(255,200,0,.5); }
+
+  .bub { position: absolute; top: -48px; left: 50%; transform: translateX(-50%) scale(0); max-width: 262px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 8px 14px; border-radius: 18px; background: #fff; border: 3.5px solid #1d1d24; font-family: 'Gochi Hand', 'Amatic SC', cursive; font-size: 30px; line-height: 1.05; color: #1d1d24; text-align: center; direction: auto; unicode-bidi: plaintext; z-index: 3; box-shadow: 3px 4px 0 rgba(0,0,0,.12); animation: bub 4.5s ease forwards; word-break: break-word; }
+  .bub::after { content: ''; position: absolute; bottom: -14px; left: 50%; margin-left: -9px; border: 9px solid transparent; border-top: 12px solid #1d1d24; }
+  .float { position: absolute; left: 50%; top: 120px; font-size: 40px; pointer-events: none; animation: up 1.8s ease-out forwards; z-index: 4; }
+  .float img { width: 80px; height: 80px; object-fit: contain; }
+  .tag { position: absolute; top: 40px; left: 50%; transform: translateX(-50%); padding: 4px 14px; border-radius: 99px; background: #ff4d8d; color: #fff; font-family: 'Gochi Hand', cursive; font-size: 24px; white-space: nowrap; animation: up 2.2s ease-out forwards; z-index: 4; }
+
+  .conn { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font: 700 26px Arial; padding: 6px 18px; border-radius: 99px; background: rgba(200,30,30,.85); color: #fff; display: none; direction: rtl; }
+  body.offline .conn { display: block; }
+
+  @keyframes popin { 0% { transform: scale(0) rotate(-15deg); opacity: 0; } 100% { transform: none; opacity: 1; } }
+  @keyframes popout { to { transform: scale(0) rotate(15deg); opacity: 0; } }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  @keyframes sway { 0%, 100% { transform: rotate(-2.2deg); } 50% { transform: rotate(2.2deg); } }
+  @keyframes jump { 0% { transform: none; } 35% { transform: translateY(-60px) rotate(-6deg); } 60% { transform: translateY(0) scaleY(.92); } 100% { transform: none; } }
+  @keyframes bub { 0% { transform: translateX(-50%) scale(0); } 8% { transform: translateX(-50%) scale(1.08); } 12%, 88% { transform: translateX(-50%) scale(1); } 100% { transform: translateX(-50%) scale(0); } }
+  @keyframes up { 0% { transform: translate(-50%, 0) scale(.5); opacity: 0; } 15% { opacity: 1; transform: translate(-50%, -20px) scale(1.1); } 100% { transform: translate(-50%, -170px) scale(1); opacity: 0; } }
+</style>
+</head>
+<body>
+<div class="wrap" id="wrap">
+  <div class="title" id="title"></div>
+  <div class="grid" id="grid"></div>
+  <div class="conn">⚠️ אין חיבור. פתח את דף הממסר / TikStudio</div>
+</div>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <filter id="sketch" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="2" seed="3"/><feDisplacementMap in="SourceGraphic" scale="3.2"/></filter>
+  </defs>
+</svg>
+<script>
+(() => {
+  const Q = new URLSearchParams(location.search);
+  const $ = (id) => document.getElementById(id);
+  if (Q.get('bg') === '0') document.body.classList.add('clear');
+  const COLS = Math.max(2, Math.min(6, Number(Q.get('cols')) || 4));
+  const MAX = Math.max(COLS, Number(Q.get('max')) || COLS * 5);
+  $('grid').style.setProperty('--cols', COLS);
+  if (Q.get('title')) { $('title').textContent = Q.get('title'); document.body.classList.add('has-title'); }
+  const fit = () => { const k = Math.min(innerWidth / 1080, innerHeight / 1920) || 1; const w = $('wrap'); w.style.transform = `scale(${k})`; w.style.left = ((innerWidth - 1080 * k) / 2) + 'px'; };
+  addEventListener('resize', fit); fit();
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  // ===== אקראיות קבועה לכל משתמש (אותו צופה = אותה דמות) =====
+  function rng(seed) { let h = 2166136261; for (const c of String(seed)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return () => { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return ((h >>> 0) % 100000) / 100000; }; }
+  const pick = (r, a) => a[Math.floor(r() * a.length)];
+  const GRADS = [['#ff5fa2', '#ffcf3f'], ['#3ec5ff', '#8a5cff'], ['#ffb347', '#ff5e5e'], ['#38e07b', '#22c4e6'], ['#ff7eb3', '#a66bff'], ['#ffd23f', '#ff8a3d'], ['#5ee7df', '#b490ca'], ['#f857a6', '#ff5858'], ['#00c6ff', '#0072ff'], ['#fbd72b', '#f9484a'], ['#a8ff78', '#78ffd6'], ['#ff9a9e', '#fad0c4']];
+  const RAINBOW = ['#ff5e5e', '#ffb347', '#ffe14d', '#5fe37f', '#4cc3ff', '#9d7bff'];
+  const DECOS = [['🌸', '🦋'], ['✨', '🎀'], ['🍭', '🍬'], ['🌈', '☁️'], ['⭐', '🌙'], ['🍓', '🍒'], ['🐾', '💛'], ['🌼', '🐝'], ['💎', '👑'], ['🎈', '🎉'], ['', ''], ['', '']];
+
+  // ===== ציור דמות (SVG) =====
+  let uid = 0;
+  function figureSVG(user, r, extra = {}) {
+    const id = 'f' + (++uid);
+    const dress = r() < .55;
+    const [c1, c2] = pick(r, GRADS);
+    const rainbow = r() < .12;
+    const legsPose = pick(r, ['stand', 'stand', 'wide', 'kick']);
+    const armsPose = pick(r, ['down', 'down', 'up', 'wave', 'hips']);
+    const hair = pick(r, ['none', 'none', 'pigtails', 'bun', 'cat', 'bow', 'cap', 'bunny', 'crown0', 'flowerclip']);
+    const held = extra.held || pick(r, ['none', 'none', 'balloons', 'icecream', 'lollipop', 'flower', 'heart', 'none']);
+    const hoop = r() < .1;
+    const pattern = pick(r, ['none', 'none', 'dots', 'stripes']);
+    const fill = rainbow ? `url(#${id}rb)` : `url(#${id}g)`;
+    const HX = 100, HY = 58, HR = 34;
+    let defs = `<linearGradient id="${id}g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient>
+      <linearGradient id="${id}rb" x1="0" y1="0" x2="0" y2="1">${RAINBOW.map((c, i) => `<stop offset="${i / 6}" stop-color="${c}"/><stop offset="${(i + 1) / 6}" stop-color="${c}"/>`).join('')}</linearGradient>
+      <clipPath id="${id}c"><circle cx="${HX}" cy="${HY}" r="${HR - 2}"/></clipPath>
+      <pattern id="${id}d" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="7" cy="7" r="2.6" fill="rgba(255,255,255,.75)"/></pattern>
+      <pattern id="${id}s" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(90)"><rect width="6" height="12" fill="rgba(255,255,255,.35)"/></pattern>`;
+    let body = '', ink = '', back = '', front = '';
+    // גוף
+    if (dress) {
+      const flare = 34 + r() * 18;
+      body += `<path d="M86 96 Q100 92 114 96 L${118 + flare * .6} 180 Q100 188 ${82 - flare * .6} 180 Z" fill="${fill}" stroke="#1d1d24" stroke-width="3.5" stroke-linejoin="round"/>`;
+      if (pattern !== 'none') body += `<path d="M86 96 Q100 92 114 96 L${118 + flare * .6} 180 Q100 188 ${82 - flare * .6} 180 Z" fill="url(#${id}${pattern === 'dots' ? 'd' : 's'})"/>`;
+      if (r() < .4) body += `<path d="M${84 - flare * .55} 172 Q100 182 ${116 + flare * .55} 172" stroke="#fff" stroke-width="4" fill="none" stroke-dasharray="2 8" stroke-linecap="round"/>`;
+    } else {
+      const [s1, s2] = pick(r, GRADS);
+      body += `<rect x="80" y="96" width="40" height="52" rx="5" fill="${fill}" stroke="#1d1d24" stroke-width="3.5"/>`;
+      if (pattern !== 'none') body += `<rect x="80" y="96" width="40" height="52" rx="5" fill="url(#${id}${pattern === 'dots' ? 'd' : 's'})"/>`;
+      body += `<path d="M81 148 L119 148 L120 172 L103 172 L100 160 L97 172 L80 172 Z" fill="${s1}" stroke="#1d1d24" stroke-width="3.5" stroke-linejoin="round"/>`;
+      if (r() < .5) body += `<circle cx="93" cy="113" r="3" fill="#fff"/><circle cx="107" cy="124" r="3" fill="#fff"/><circle cx="96" cy="134" r="3" fill="#fff"/>`;
+    }
+    const hipY = dress ? 178 : 170;
+    // רגליים
+    const L = { stand: [[92, hipY, 90, 262], [108, hipY, 110, 262]], wide: [[92, hipY, 78, 262], [108, hipY, 122, 262]], kick: [[94, hipY, 92, 262], [106, hipY, 126, 228]] }[legsPose];
+    for (const [x1, y1, x2, y2] of L) ink += `<path class="ink" d="M${x1} ${y1} L${x2} ${y2}"/>`;
+    const [s1, s2] = [pick(r, ['#3c7cff', '#ff4d6d', '#1d1d24', '#ffb000', '#2fbf71']), 0];
+    for (const [, , x2, y2] of L) front += `<ellipse cx="${x2 + 3}" cy="${y2 + 2}" rx="8" ry="5" fill="${s1}" stroke="#1d1d24" stroke-width="2.5"/>`;
+    // ידיים
+    const A = { down: [[86, 102, 62, 150], [114, 102, 138, 150]], up: [[86, 102, 58, 70], [114, 102, 142, 70]], wave: [[86, 102, 62, 150], [114, 102, 146, 74]], hips: [[86, 102, 66, 128, 84, 140], [114, 102, 134, 128, 116, 140]] }[armsPose];
+    for (const a of A) ink += a.length === 4 ? `<path class="ink" d="M${a[0]} ${a[1]} L${a[2]} ${a[3]}"/>` : `<path class="ink" d="M${a[0]} ${a[1]} L${a[2]} ${a[3]} L${a[4]} ${a[5]}"/>`;
+    const hand = A[1].length === 4 ? [A[1][2], A[1][3]] : [138, 128];
+    // צוואר
+    ink += `<path class="ink" d="M100 ${HY + HR} L100 96"/>`;
+    // ראש: תמונת פרופיל או ראש מצויר
+    const initial = esc(((user.nick || '?').trim()[0] || '?'));
+    const face = `<circle cx="${HX}" cy="${HY}" r="${HR}" fill="${pick(r, ['#ffe0c7', '#f7d1b0', '#e8b894', '#ffd9e6', '#d8f0ff'])}"/>
+      <text x="${HX}" y="${HY + 12}" text-anchor="middle" font-family="Gochi Hand, Arial" font-size="34" fill="#1d1d24">${initial}</text>`;
+    const avatar = user.avatar ? `<image href="${esc(user.avatar)}" x="${HX - HR}" y="${HY - HR}" width="${HR * 2}" height="${HR * 2}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${id}c)" referrerpolicy="no-referrer" onerror="this.remove()"/>` : '';
+    let head = `${face}${avatar}<circle cx="${HX}" cy="${HY}" r="${HR}" fill="none" stroke="#1d1d24" stroke-width="4"/>`;
+    // שיער / כובע
+    const hc = pick(r, ['#1d1d24', '#5a3a1e', '#e0a030', '#ff5fa2']);
+    if (hair === 'pigtails') back += `<path d="M${HX - HR + 2} ${HY + 4} q-16 8 -10 34 q8 -4 6 -12 q10 6 4 -22" fill="${hc}" stroke="#1d1d24" stroke-width="2.5"/><path d="M${HX + HR - 2} ${HY + 4} q16 8 10 34 q-8 -4 -6 -12 q-10 6 -4 -22" fill="${hc}" stroke="#1d1d24" stroke-width="2.5"/>`;
+    if (hair === 'bun') back += `<circle cx="${HX}" cy="${HY - HR - 6}" r="11" fill="${hc}" stroke="#1d1d24" stroke-width="3"/>`;
+    if (hair === 'cat') front += `<path d="M${HX - 28} ${HY - 20} L${HX - 30} ${HY - 48} L${HX - 10} ${HY - 32} Z M${HX + 28} ${HY - 20} L${HX + 30} ${HY - 48} L${HX + 10} ${HY - 32} Z" fill="#1d1d24"/>`;
+    if (hair === 'bow') front += `<path d="M${HX + 14} ${HY - 34} l-14 -10 v20 Z M${HX + 14} ${HY - 34} l14 -10 v20 Z" fill="${c1}" stroke="#1d1d24" stroke-width="2.5" stroke-linejoin="round"/><circle cx="${HX + 14}" cy="${HY - 34}" r="4" fill="#1d1d24"/>`;
+    if (hair === 'cap') front += `<path d="M${HX - HR + 2} ${HY - 10} Q${HX} ${HY - HR - 18} ${HX + HR - 2} ${HY - 10} Z" fill="${c2}" stroke="#1d1d24" stroke-width="3"/><path d="M${HX + 10} ${HY - 12} L${HX + HR + 22} ${HY - 8}" stroke="${c2}" stroke-width="7" stroke-linecap="round"/>`;
+    if (hair === 'bunny') back += `<ellipse cx="${HX - 12}" cy="${HY - HR - 22}" rx="8" ry="24" fill="#fff" stroke="#1d1d24" stroke-width="3"/><ellipse cx="${HX + 12}" cy="${HY - HR - 22}" rx="8" ry="24" fill="#fff" stroke="#1d1d24" stroke-width="3"/><ellipse cx="${HX - 12}" cy="${HY - HR - 22}" rx="3.5" ry="16" fill="#ff9ec7"/><ellipse cx="${HX + 12}" cy="${HY - HR - 22}" rx="3.5" ry="16" fill="#ff9ec7"/>`;
+    if (hair === 'flowerclip') front += flower(HX + 26, HY - 26, 9, pick(r, ['#ff5fa2', '#ffcf3f', '#8a5cff']));
+    if (hair === 'crown0' || extra.crown) front += `<path d="M${HX - 22} ${HY - HR + 2} L${HX - 24} ${HY - HR - 22} L${HX - 10} ${HY - HR - 8} L${HX} ${HY - HR - 26} L${HX + 10} ${HY - HR - 8} L${HX + 24} ${HY - HR - 22} L${HX + 22} ${HY - HR + 2} Z" fill="#ffd23f" stroke="#1d1d24" stroke-width="3" stroke-linejoin="round"/>`;
+    // חפץ ביד
+    const [hx, hy] = hand;
+    if (held === 'balloons') { const bc = ['#ff4d6d', '#ffd23f', '#4cc3ff', '#9d7bff']; back += bc.map((c, i) => { const bx = hx - 18 + i * 14, by = hy - 92 - (i % 2) * 18; return `<path d="M${hx} ${hy} Q${bx} ${by + 40} ${bx} ${by + 16}" stroke="#555" stroke-width="1.6" fill="none"/><ellipse cx="${bx}" cy="${by}" rx="13" ry="16" fill="${c}" stroke="#1d1d24" stroke-width="2.5"/><ellipse cx="${bx - 4}" cy="${by - 5}" rx="3" ry="5" fill="rgba(255,255,255,.6)"/>`; }).join(''); }
+    if (held === 'icecream') front += `<path d="M${hx - 9} ${hy - 6} L${hx} ${hy + 16} L${hx + 9} ${hy - 6} Z" fill="#e8a45c" stroke="#1d1d24" stroke-width="2.5"/><circle cx="${hx}" cy="${hy - 12}" r="11" fill="#ff9ec7" stroke="#1d1d24" stroke-width="2.5"/><circle cx="${hx + 2}" cy="${hy - 24}" r="4" fill="#ff3b5c"/>`;
+    if (held === 'lollipop') front += `<path d="M${hx} ${hy} L${hx + 6} ${hy - 34}" stroke="#fff" stroke-width="4"/><circle cx="${hx + 7}" cy="${hy - 46}" r="14" fill="#ffd23f" stroke="#1d1d24" stroke-width="2.5"/><path d="M${hx + 7} ${hy - 46} m-8 0 a8 8 0 1 1 8 8 a5 5 0 1 1 -5 -5" stroke="#ff4d6d" stroke-width="3" fill="none"/>`;
+    if (held === 'flower') front += `<path d="M${hx} ${hy} L${hx + 4} ${hy - 30}" stroke="#2fbf71" stroke-width="3"/>` + flower(hx + 4, hy - 36, 10, '#ff5fa2');
+    if (held === 'heart') front += `<path d="M${hx} ${hy - 10} c-12 -14 -28 0 0 20 c28 -20 12 -34 0 -20 Z" fill="#ff3b5c" stroke="#1d1d24" stroke-width="2.5"/>`;
+    if (hoop) front += `<ellipse cx="100" cy="${dress ? 150 : 140}" rx="64" ry="11" fill="none" stroke="#ff8a3d" stroke-width="6"/><ellipse cx="100" cy="${dress ? 150 : 140}" rx="64" ry="11" fill="none" stroke="#ffd23f" stroke-width="2"/>`;
+    // פרחים ליד הרגליים + צל
+    const fx = r() < .5 ? 30 : 168;
+    const ground = `<path d="M60 270 Q100 262 150 268" stroke="#9aa0ad" stroke-width="3" fill="none" stroke-linecap="round" opacity=".55"/>
+      <path d="M${fx} 270 l0 -18 M${fx + 8} 270 l2 -12" stroke="#2fbf71" stroke-width="2.5" stroke-linecap="round"/>${flower(fx, 248, 6, pick(r, ['#ff5fa2', '#8a5cff', '#ffcf3f', '#ff6b6b']))}${flower(fx + 10, 256, 5, pick(r, ['#4cc3ff', '#ff9ec7', '#ff8a3d']))}`;
+    return `<svg viewBox="0 0 200 280"><defs>${defs}</defs><g filter="url(#sketch)">${ground}${back}${body}${ink}${head}${front}</g></svg>`;
+  }
+  function flower(x, y, r, c) { let p = ''; for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; p += `<circle cx="${(x + Math.cos(a) * r * .9).toFixed(1)}" cy="${(y + Math.sin(a) * r * .9).toFixed(1)}" r="${(r * .6).toFixed(1)}" fill="${c}" stroke="#1d1d24" stroke-width="1.5"/>`; } return p + `<circle cx="${x}" cy="${y}" r="${(r * .45).toFixed(1)}" fill="#ffd23f" stroke="#1d1d24" stroke-width="1.5"/>`; }
+
+  // ===== ניהול הדמויות =====
+  const KEY = 'doodles-wall';
+  const figs = new Map(); // id -> { el, user, coins, last }
+  let saved = [];
+  try { if (Q.get('reset') === '1') localStorage.removeItem(KEY); saved = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { /* */ }
+  const persist = () => { if (Q.get('demo')) return; try { localStorage.setItem(KEY, JSON.stringify([...figs.values()].map((f) => ({ user: f.user, coins: f.coins, last: f.last })))); } catch { /* */ } };
+
+  function render(f) {
+    const r = rng(f.user.id || f.user.nick);
+    const vip = f.coins >= 100;
+    f.el.classList.toggle('vip', vip);
+    f.el.querySelector('.sv').innerHTML = figureSVG(f.user, r, { crown: f.coins >= 500, held: vip && f.coins < 500 ? 'balloons' : undefined });
+    const d = pick(r, DECOS);
+    f.el.querySelector('.name').textContent = `${d[0]} ${f.user.nick || ''} ${d[1]}`.trim();
+  }
+
+  function ensure(user) {
+    const key = String(user.id || user.name || user.nick || '');
+    if (!key) return null;
+    let f = figs.get(key);
+    if (f) { f.last = Date.now(); if (user.avatar && !f.user.avatar) { f.user.avatar = user.avatar; render(f); } return f; }
+    // מקום מלא: מוציאים את הדמות הכי פחות פעילה (תורמים נשארים)
+    if (figs.size >= MAX) {
+      const victim = [...figs.entries()].sort((a, b) => (a[1].coins >= 100) - (b[1].coins >= 100) || a[1].last - b[1].last)[0];
+      if (victim) { const v = victim[1].el; v.classList.add('out'); setTimeout(() => v.remove(), 500); figs.delete(victim[0]); }
+    }
+    const el = document.createElement('div');
+    el.className = 'fig';
+    const r = rng(key);
+    el.style.setProperty('--sp', (2.6 + r() * 1.6).toFixed(2) + 's');
+    el.style.setProperty('--dl', (-r() * 3).toFixed(2) + 's');
+    el.innerHTML = '<div class="sv"></div><div class="name"></div>';
+    $('grid').appendChild(el);
+    f = { el, user: { id: key, nick: user.nick || user.name || '', avatar: user.avatar || '' }, coins: 0, last: Date.now() };
+    figs.set(key, f);
+    render(f); persist();
+    return f;
+  }
+
+  function fx(f, html, cls = 'float') {
+    const d = document.createElement('div'); d.className = cls; d.innerHTML = html;
+    d.style.marginLeft = (Math.random() * 60 - 30) + 'px';
+    f.el.appendChild(d); setTimeout(() => d.remove(), 2300);
+  }
+  function jump(f) { f.el.classList.remove('jump'); void f.el.offsetWidth; f.el.classList.add('jump'); }
+
+  const seen = new Set();
+  function onEvent(ev) {
+    if (!ev || !ev.user) return;
+    if (ev.id) { if (seen.has(ev.id)) return; seen.add(ev.id); if (seen.size > 5000) seen.clear(); }
+    const t = ev.type;
+    if (t === 'join' && Q.get('join') !== '1') return;
+    if (t === 'gift' && ev.streaking) return;
+    if (!['chat', 'gift', 'like', 'follow', 'share', 'subscribe', 'join'].includes(t)) return;
+    const f = ensure(ev.user); if (!f) return;
+    if (t === 'chat' && ev.comment) {
+      f.el.querySelectorAll('.bub').forEach((b) => b.remove());
+      const b = document.createElement('div'); b.className = 'bub'; b.textContent = String(ev.comment).slice(0, 60);
+      f.el.appendChild(b); setTimeout(() => b.remove(), 4600);
+    }
+    if (t === 'like') for (let i = 0; i < Math.min(3, Math.ceil((ev.likeCount || 1) / 10)); i++) setTimeout(() => fx(f, ['❤️', '💖', '💕'][i % 3]), i * 200);
+    if (t === 'gift') {
+      const g = ev.gift || {};
+      const before = f.coins;
+      f.coins += Number(g.total) || (Number(g.coins) || 1) * (Number(g.count) || 1);
+      jump(f);
+      fx(f, g.image ? `<img src="${esc(g.image)}" referrerpolicy="no-referrer" alt="">` : '🎁');
+      if ((before < 100 && f.coins >= 100) || (before < 500 && f.coins >= 500)) { render(f); fx(f, f.coins >= 500 ? '👑 מלך הלייב!' : '🎈 תומך!', 'tag'); }
+      persist();
+    }
+    if (t === 'follow' || t === 'subscribe') { jump(f); fx(f, '💖 עוקב חדש', 'tag'); }
+    if (t === 'share') { jump(f); fx(f, '🔁 שיתף', 'tag'); }
+    f.last = Date.now();
+  }
+
+  // דמויות שנשמרו (רענון לא מוחק)
+  for (const s of saved.slice(-MAX)) { const f = ensure(s.user); if (f) { f.coins = s.coins || 0; f.last = s.last || 0; render(f); } }
+
+  // ===== חיבור =====
+  if (Q.get('demo')) {
+    const names = ['NamFon', 'Ella', 'ShelaLaden', 'דנה', 'יוסי 🎮', 'Capricorn', 'נועה', 'Mi ☆', 'אבי', 'Ellemhaz', 'שירה', 'F', 'tomer_tlv', 'מאיה', 'Lior', 'קים'];
+    let i = 0;
+    const tick = () => {
+      const n = names[i % names.length]; const u = { id: 'demo' + (i % names.length), nick: n };
+      const k = i % 5;
+      if (k === 0 || i < names.length) onEvent({ type: 'chat', user: u, comment: ['היי!! 👋', 'איזה חמוד הלייב', 'מאיפה אתה?', '😂😂', 'אוהבת ❤️'][i % 5] });
+      else if (k === 1) onEvent({ type: 'like', user: u, likeCount: 20 });
+      else if (k === 2) onEvent({ type: 'gift', user: u, gift: { name: 'Rose', coins: 1, count: 1, total: i % 9 === 0 ? 120 : 1 } });
+      else onEvent({ type: 'follow', user: u });
+      i++;
+    };
+    for (let k = 0; k < 12; k++) tick();
+    setInterval(tick, 900);
+    return;
+  }
+  let wsOk = false, cloudOk = false, offT = null;
+  const status = () => { clearTimeout(offT); if (wsOk || cloudOk) document.body.classList.remove('offline'); else offT = setTimeout(() => { if (!wsOk && !cloudOk) document.body.classList.add('offline'); }, 8000); };
+  const TOPIC = Q.get('relay') || 'ts-clasico-fbe642fc1dc9';
+  const local = /^(localhost|127\.0\.0\.1|localtest\.me)$/.test(location.hostname);
+  if (!local && Q.get('relay') !== '0') {
+    const es = new EventSource(`${Q.get('ntfy') || 'https://ntfy.sh'}/${encodeURIComponent(TOPIC)}/sse`);
+    es.onopen = () => { cloudOk = true; status(); };
+    es.onerror = () => { cloudOk = false; status(); };
+    es.onmessage = (e) => {
+      let m; try { m = JSON.parse(e.data); } catch { return; }
+      if (m.event !== 'message' || !m.message) return;
+      let batch; try { batch = JSON.parse(m.message); } catch { return; }
+      const T = { g: 'gift', c: 'chat', l: 'like', f: 'follow', s: 'share', j: 'join' };
+      for (const it of Array.isArray(batch) ? batch : []) if (T[it.t]) onEvent({ id: it.i, type: T[it.t], user: it.u || {}, gift: it.g, comment: it.c, likeCount: it.n });
+    };
+  }
+  const port = Q.get('port') || (local ? location.port : '8787') || '8787';
+  function open() {
+    let ws;
+    try { ws = new WebSocket(`ws://${local ? location.hostname : '127.0.0.1'}:${port}/ws?page=doodles`); } catch { return; }
+    let ok = false;
+    ws.onopen = () => { ok = true; wsOk = true; status(); };
+    ws.onmessage = (e) => { let m; try { m = JSON.parse(e.data); } catch { return; } if (m.type === 'event') onEvent(m.event); };
+    ws.onclose = () => { wsOk = false; status(); setTimeout(open, ok ? 2500 : 10000); };
+    ws.onerror = () => {};
+  }
+  open();
+  status();
+})();
+</script>
+</body>
+</html>
